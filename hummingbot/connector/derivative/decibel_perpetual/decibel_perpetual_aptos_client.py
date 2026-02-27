@@ -99,13 +99,19 @@ class DecibelAptosClient:
         price_u64 = self.format_value(price)
         size_u64 = self.format_value(size)
 
-        # Convert client_order_id string to a u128 via MD5 hash.
-        # If not provided, default to 0.
+        # Convert client_order_id to a u128 integer.
+        # The caller (buy/sell) already MD5-hashes the original order ID
+        # into a "0x{hex}" string, so we parse it directly to avoid double-hashing.
         cloid_u128 = 0
         if client_order_id:
-            md5 = hashlib.md5()
-            md5.update(client_order_id.encode("utf-8"))
-            cloid_u128 = int(md5.hexdigest(), 16)
+            hex_str = client_order_id[2:] if client_order_id.startswith("0x") else client_order_id
+            try:
+                cloid_u128 = int(hex_str, 16)
+            except ValueError:
+                # Fallback: hash arbitrary strings that aren't hex
+                md5 = hashlib.md5()
+                md5.update(client_order_id.encode("utf-8"))
+                cloid_u128 = int(md5.hexdigest(), 16)
 
         function = EntryFunction.natural(
             f"{self._package_address}::{CONSTANTS.DEX_ACCOUNTS_MODULE}",
