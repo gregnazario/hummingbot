@@ -963,6 +963,16 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
         tracked_order = self._order_tracker.all_updatable_orders.get(client_order_id)
 
         if not tracked_order:
+            # Fallback: try matching by exchange_order_id
+            exchange_oid = str(order_msg.get("order_id", ""))
+            if exchange_oid:
+                for order in self._order_tracker.all_updatable_orders.values():
+                    if order.exchange_order_id == exchange_oid:
+                        tracked_order = order
+                        client_order_id = order.client_order_id
+                        break
+
+        if not tracked_order:
             self.logger().debug(
                 f"Ignoring order message with client_order_id {client_order_id}: not in in_flight_orders."
             )
@@ -1059,7 +1069,11 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
         - perp_equity_balance -> total balance
         - usdc_cross_withdrawable_balance -> available balance
         """
-        trading_account = self._get_trading_account()
+        try:
+            trading_account = self._get_trading_account()
+        except ValueError:
+            self.logger().warning("Trading account not configured. Skipping balance update.")
+            return
 
         account_info = await self._api_get(
             path_url=CONSTANTS.ACCOUNT_OVERVIEW_URL,
@@ -1095,7 +1109,11 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
         - estimated_liquidation_price
         - user_leverage
         """
-        trading_account = self._get_trading_account()
+        try:
+            trading_account = self._get_trading_account()
+        except ValueError:
+            self.logger().warning("Trading account not configured. Skipping position update.")
+            return
 
         all_positions = await self._api_get(
             path_url=CONSTANTS.ACCOUNT_POSITIONS_URL,
@@ -1118,7 +1136,7 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
             amount = Decimal(str(position_data.get("size", "0")))
             position_side = PositionSide.LONG if amount > 0 else PositionSide.SHORT
             entry_price = Decimal(str(position_data.get("entry_price", "0")))
-            unrealized_pnl = Decimal(str(position_data.get("unrealized_funding", "0")))
+            unrealized_pnl = Decimal(str(position_data.get("unrealized_pnl", "0")))
             leverage = Decimal(str(position_data.get("user_leverage", "1")))
 
             pos_key = self._perpetual_trading.position_key(hb_trading_pair, position_side)
