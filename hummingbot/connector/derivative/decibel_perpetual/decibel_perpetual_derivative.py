@@ -773,7 +773,7 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
 
     async def _all_trade_updates_for_order(self, order: InFlightOrder) -> List[TradeUpdate]:
         # Trade updates are handled by _update_trade_history and WS user_trades
-        pass
+        return []
 
     # ------------------------------------------------------------------
     # Order status request

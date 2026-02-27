@@ -100,6 +100,12 @@ RATE_LIMITS = [
               linked_limits=[LinkedLimitWeightPair(ALL_ENDPOINTS_LIMIT)]),
     RateLimit(limit_id=SUBACCOUNTS_URL, limit=MAX_REQUEST, time_interval=60,
               linked_limits=[LinkedLimitWeightPair(ALL_ENDPOINTS_LIMIT)]),
+    RateLimit(limit_id=CANDLESTICK_URL, limit=MAX_REQUEST, time_interval=60,
+              linked_limits=[LinkedLimitWeightPair(ALL_ENDPOINTS_LIMIT)]),
+    RateLimit(limit_id=TRADES_URL, limit=MAX_REQUEST, time_interval=60,
+              linked_limits=[LinkedLimitWeightPair(ALL_ENDPOINTS_LIMIT)]),
+    RateLimit(limit_id=FUNDING_RATE_HISTORY_URL, limit=MAX_REQUEST, time_interval=60,
+              linked_limits=[LinkedLimitWeightPair(ALL_ENDPOINTS_LIMIT)]),
 ]
 
 ORDER_NOT_EXIST_MESSAGE = "order"
