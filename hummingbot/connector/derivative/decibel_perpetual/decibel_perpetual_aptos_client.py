@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import logging
 from decimal import Decimal
@@ -138,7 +139,10 @@ class DecibelAptosClient:
         payload = TransactionPayload(function)
         signed_txn = await self._client.create_bcs_signed_transaction(self._account, payload)
         tx_hash = await self._client.submit_bcs_transaction(signed_txn)
-        await self._client.wait_for_transaction(tx_hash)
+        await asyncio.wait_for(
+            self._client.wait_for_transaction(tx_hash),
+            timeout=CONSTANTS.APTOS_TX_TIMEOUT,
+        )
         return tx_hash
 
     async def cancel_order(
@@ -173,7 +177,10 @@ class DecibelAptosClient:
         payload = TransactionPayload(function)
         signed_txn = await self._client.create_bcs_signed_transaction(self._account, payload)
         tx_hash = await self._client.submit_bcs_transaction(signed_txn)
-        await self._client.wait_for_transaction(tx_hash)
+        await asyncio.wait_for(
+            self._client.wait_for_transaction(tx_hash),
+            timeout=CONSTANTS.APTOS_TX_TIMEOUT,
+        )
         return tx_hash
 
     # ------------------------------------------------------------------

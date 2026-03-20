@@ -252,7 +252,7 @@ class DecibelPerpetualAPIOrderBookDataSource(PerpetualAPIOrderBookDataSource):
             return channel
 
         if topic.startswith(CONSTANTS.WS_DEPTH_TOPIC + ":"):
-            channel = self._snapshot_messages_queue_key
+            channel = self._diff_messages_queue_key
         elif topic.startswith(CONSTANTS.WS_TRADES_TOPIC + ":"):
             channel = self._trade_messages_queue_key
         elif topic.startswith(CONSTANTS.WS_MARKET_PRICE_TOPIC + ":"):

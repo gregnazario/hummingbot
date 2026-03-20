@@ -306,7 +306,7 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
             # Derive hummingbot trading pair.
             # Decibel market names are like "BTC-PERP".
             # The base is everything before the last "-", quote is USDC.
-            base = market_name
+            base = market_name.rsplit("-", 1)[0]
             quote = CONSTANTS.CURRENCY
             trading_pair = combine_to_hb_trading_pair(base, quote)
 

@@ -15,7 +15,7 @@ from hummingbot.core.data_type.order_book_message import OrderBookMessage, Order
 
 API_KEY = "test_api_key"
 SECRET_KEY = "0xdeadbeef"
-TRADING_PAIR = "BTC-PERP-USDC"
+TRADING_PAIR = "BTC-USDC"
 EXCHANGE_SYMBOL = "BTC-PERP"
 MARKET_ADDR = "0xabc123def456"
 TRADING_ACCOUNT = "0xsubaccount1234"
@@ -179,7 +179,7 @@ class TestDecibelPerpetualAPIOrderBookDataSource(IsolatedAsyncioWrapperTestCase)
     def test_channel_routing_depth(self):
         msg = {"topic": f"{CONSTANTS.WS_DEPTH_TOPIC}:{MARKET_ADDR}"}
         channel = self.data_source._channel_originating_message(msg)
-        self.assertEqual(self.data_source._snapshot_messages_queue_key, channel)
+        self.assertEqual(self.data_source._diff_messages_queue_key, channel)
 
     def test_channel_routing_trades(self):
         msg = {"topic": f"{CONSTANTS.WS_TRADES_TOPIC}:{MARKET_ADDR}"}

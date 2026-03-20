@@ -8,22 +8,6 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 from bidict import bidict
 
-# Patch split_hb_trading_pair before any connector imports so that multi-hyphen
-# trading pairs like "BTC-PERP-USDC" are handled correctly (rsplit on last "-").
-import hummingbot.connector.utils as _conn_utils
-
-_original_split = _conn_utils.split_hb_trading_pair
-
-
-def _safe_split(trading_pair: str) -> Tuple[str, str]:
-    parts = trading_pair.rsplit("-", 1)
-    if len(parts) == 2:
-        return parts[0], parts[1]
-    return _original_split(trading_pair)
-
-
-_conn_utils.split_hb_trading_pair = _safe_split
-
 import hummingbot.connector.derivative.decibel_perpetual.decibel_perpetual_constants as CONSTANTS
 import hummingbot.connector.derivative.decibel_perpetual.decibel_perpetual_web_utils as web_utils
 from hummingbot.connector.derivative.decibel_perpetual.decibel_perpetual_api_order_book_data_source import (
@@ -40,7 +24,7 @@ from hummingbot.core.data_type.trade_fee import TokenAmount
 API_KEY = "test_api_key"
 SECRET_KEY = "0xdeadbeef"
 TRADING_ACCOUNT = "0xsubaccount1234"
-TRADING_PAIR = "BTC-PERP-USDC"
+TRADING_PAIR = "BTC-USDC"
 EXCHANGE_SYMBOL = "BTC-PERP"
 MARKET_ADDR = "0xabc123def456"
 DOMAIN = CONSTANTS.TESTNET_DOMAIN

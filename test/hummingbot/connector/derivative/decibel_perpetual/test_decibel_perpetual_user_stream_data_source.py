@@ -14,7 +14,7 @@ from hummingbot.core.web_assistant.connections.data_types import WSJSONRequest
 API_KEY = "test_api_key"
 SECRET_KEY = "0xdeadbeef"
 TRADING_ACCOUNT = "0xsubaccount1234"
-TRADING_PAIR = "BTC-PERP-USDC"
+TRADING_PAIR = "BTC-USDC"
 DOMAIN = CONSTANTS.TESTNET_DOMAIN
 
 

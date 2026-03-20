@@ -33,6 +33,7 @@ CANCEL_ORDER_FUNCTION = "cancel_order_to_subaccount"
 
 # Price/size use 9 decimal precision on-chain
 ON_CHAIN_DECIMAL_PLACES = 9
+APTOS_TX_TIMEOUT = 30  # seconds to wait for on-chain transaction confirmation
 
 FUNDING_RATE_UPDATE_INTERNAL_SECOND = 60
 
@@ -108,5 +109,5 @@ RATE_LIMITS = [
               linked_limits=[LinkedLimitWeightPair(ALL_ENDPOINTS_LIMIT)]),
 ]
 
-ORDER_NOT_EXIST_MESSAGE = "order"
+ORDER_NOT_EXIST_MESSAGE = "Order not found"
 UNKNOWN_ORDER_MESSAGE = "Order not found"
