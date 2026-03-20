@@ -285,8 +285,8 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
         - sz_decimals, px_decimals, tick_size, min_size, lot_size, max_leverage, mode
         """
         mapping = bidict()
-        self.market_name_to_addr = {}
-        self.addr_to_market_name = {}
+        new_name_to_addr = {}
+        new_addr_to_name = {}
 
         markets = exchange_info if isinstance(exchange_info, list) else exchange_info.get("markets", exchange_info)
         if not isinstance(markets, list):
@@ -299,9 +299,9 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
             if not market_name or not market_addr:
                 continue
 
-            # Build address maps
-            self.market_name_to_addr[market_name] = market_addr
-            self.addr_to_market_name[market_addr] = market_name
+            # Build address maps in temporaries to avoid race with WS handlers
+            new_name_to_addr[market_name] = market_addr
+            new_addr_to_name[market_addr] = market_name
 
             # Derive hummingbot trading pair.
             # Decibel market names are like "BTC-PERP".
@@ -315,6 +315,9 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
             else:
                 mapping[market_name] = trading_pair
 
+        # Atomically swap the maps to avoid empty-map race with concurrent WS handlers
+        self.market_name_to_addr = new_name_to_addr
+        self.addr_to_market_name = new_addr_to_name
         self._set_trading_pair_symbol_map(mapping)
 
     async def _make_trading_rules_request(self) -> Any:
@@ -745,8 +748,7 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
             fee_asset = fillable_order.quote_asset
             fee_amount = Decimal(str(order_fill.get("fee_amount", "0")))
 
-            # Determine position action from context (buy vs current position)
-            position_action = PositionAction.OPEN
+            position_action = fillable_order.position if fillable_order.position != PositionAction.NIL else PositionAction.OPEN
 
             fee = TradeFeeBase.new_perpetual_fee(
                 fee_schema=self.trade_fee_schema(),
@@ -1010,29 +1012,22 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
                 tracked_order = self._order_tracker.all_fillable_orders.get(trade_client_id)
 
         if tracked_order is None:
-            # Try forcing exchange order id resolution on all fillable orders
-            all_orders = self._order_tracker.all_fillable_orders
-            for k, v in all_orders.items():
-                try:
-                    await v.get_exchange_order_id()
-                except asyncio.TimeoutError:
-                    pass
-            _cli_tracked_orders = [
-                o for o in all_orders.values()
-                if exchange_order_id == o.exchange_order_id
-            ]
-            if not _cli_tracked_orders:
-                self.logger().debug(
-                    f"Ignoring trade message with order_id {exchange_order_id}: not in in_flight_orders."
-                )
-                return
-            tracked_order = _cli_tracked_orders[0]
+            # Scan already-resolved exchange order IDs without blocking
+            for order in self._order_tracker.all_fillable_orders.values():
+                if order.exchange_order_id == exchange_order_id:
+                    tracked_order = order
+                    break
+
+        if tracked_order is None:
+            self.logger().debug(
+                f"Ignoring trade message with order_id {exchange_order_id}: not in in_flight_orders."
+            )
+            return
 
         fee_asset = tracked_order.quote_asset
         fee_amount = Decimal(str(trade.get("fee_amount", "0")))
 
-        # Determine position action
-        position_action = PositionAction.OPEN
+        position_action = tracked_order.position if tracked_order.position != PositionAction.NIL else PositionAction.OPEN
 
         fee = TradeFeeBase.new_perpetual_fee(
             fee_schema=self.trade_fee_schema(),
@@ -1081,8 +1076,10 @@ class DecibelPerpetualDerivative(PerpetualDerivativePyBase):
             is_auth_required=True,
         )
 
-        # The response may be a dict or a list with one element
-        if isinstance(account_info, list):
+        # The response may be a dict, a list with one element, or None
+        if account_info is None:
+            account_info = {}
+        elif isinstance(account_info, list):
             account_info = account_info[0] if account_info else {}
 
         quote = CONSTANTS.CURRENCY

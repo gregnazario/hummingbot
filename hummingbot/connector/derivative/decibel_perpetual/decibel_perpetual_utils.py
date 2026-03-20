@@ -22,7 +22,7 @@ class DecibelPerpetualConfigMap(BaseConnectorConfigMap):
     decibel_perpetual_api_key: SecretStr = Field(
         default=...,
         json_schema_extra={
-            "prompt": "Enter your Geomi API key (Bearer token for REST/WS)",
+            "prompt": "Enter your Decibel API key (Bearer token for REST/WS)",
             "is_secure": True,
             "is_connect_key": True,
             "prompt_on_new": True,
@@ -62,7 +62,7 @@ class DecibelPerpetualTestnetConfigMap(BaseConnectorConfigMap):
     decibel_perpetual_testnet_api_key: SecretStr = Field(
         default=...,
         json_schema_extra={
-            "prompt": "Enter your Geomi API key (Bearer token for REST/WS)",
+            "prompt": "Enter your Decibel API key (Bearer token for REST/WS)",
             "is_secure": True,
             "is_connect_key": True,
             "prompt_on_new": True,

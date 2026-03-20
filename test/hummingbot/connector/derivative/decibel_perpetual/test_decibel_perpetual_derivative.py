@@ -577,6 +577,61 @@ class TestDecibelPerpetualDerivative(IsolatedAsyncioWrapperTestCase):
         # Should not raise
         await self.exchange._process_trade_message(trade_msg)
 
+    async def test_user_stream_trade_matched_by_scan(self):
+        """Trade matched by non-blocking scan of fillable orders' exchange_order_id."""
+        order = InFlightOrder(
+            client_order_id="0xclient_scan",
+            exchange_order_id="77777",
+            trading_pair=TRADING_PAIR,
+            order_type=OrderType.LIMIT,
+            trade_type=TradeType.BUY,
+            amount=Decimal("1.0"),
+            price=Decimal("50000"),
+            creation_timestamp=1640780000,
+            initial_state=OrderState.OPEN,
+        )
+        self.exchange._order_tracker._in_flight_orders["0xclient_scan"] = order
+
+        # Trade has a different order_id format than the tracker key, and no client_order_id,
+        # so it falls through to the non-blocking scan which checks exchange_order_id.
+        trade_msg = {
+            "trade_id": "t_scan",
+            "order_id": "77777",
+            "client_order_id": "",
+            "price": "50000",
+            "size": "0.5",
+            "fee_amount": "0.01",
+            "unix_ms": 1640780005000,
+        }
+        await self.exchange._process_trade_message(trade_msg)
+
+    async def test_user_stream_trade_uses_position_action_close(self):
+        """Trade message uses tracked order's position_action for fee calculation."""
+        order = InFlightOrder(
+            client_order_id="0xclient_close",
+            exchange_order_id="66666",
+            trading_pair=TRADING_PAIR,
+            order_type=OrderType.LIMIT,
+            trade_type=TradeType.SELL,
+            amount=Decimal("1.0"),
+            price=Decimal("50000"),
+            creation_timestamp=1640780000,
+            initial_state=OrderState.OPEN,
+            position=PositionAction.CLOSE,
+        )
+        self.exchange._order_tracker._in_flight_orders["0xclient_close"] = order
+
+        trade_msg = {
+            "trade_id": "t_close",
+            "order_id": "66666",
+            "client_order_id": "0xclient_close",
+            "price": "50000",
+            "size": "1.0",
+            "fee_amount": "0.02",
+            "unix_ms": 1640780006000,
+        }
+        await self.exchange._process_trade_message(trade_msg)
+
     async def test_user_stream_event_listener_processes_order_topic(self):
         """Full event listener integration for order_updates topic."""
         order = InFlightOrder(
@@ -782,6 +837,12 @@ class TestDecibelPerpetualDerivative(IsolatedAsyncioWrapperTestCase):
         self.exchange._api_get = AsyncMock()
         await self.exchange._update_balances()
         self.exchange._api_get.assert_not_awaited()
+
+    async def test_update_balances_none_response(self):
+        """When API returns None, balances default to zero."""
+        self.exchange._api_get = AsyncMock(return_value=None)
+        await self.exchange._update_balances()
+        self.assertEqual(Decimal("0"), self.exchange._account_balances.get("USDC", Decimal("0")))
 
     # ==================================================================
     # Position update
